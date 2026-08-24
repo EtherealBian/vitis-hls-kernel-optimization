@@ -1,0 +1,28 @@
+# Vitis HLS 生成目录
+*.prj/
+.Xil/
+**/solution[0-9]*/
+**/sol[0-9]*/
+
+# Vivado 中间文件
+*.jou
+*.pb
+*.dcp
+*.xpr
+*.cache/
+*.runs/
+*.sim/
+*.srcs/
+
+# 仿真和导出临时文件
+*.encoded
+*.out
+*.exe
+*.o
+*.obj
+
+# 编辑器与系统文件
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,7 @@
+* text=auto eol=lf
+
+*.png binary
+*.dat binary
+*.xml text eol=lf
+*.rpt text eol=lf
+*.log text eol=lf
