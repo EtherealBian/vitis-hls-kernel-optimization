@@ -1,8 +1,9 @@
 # 2025 FPGA 创新设计竞赛 AMD 赛道 HLS 算子优化
 
-本仓库整理并开源 2025 年 FPGA 创新设计竞赛 AMD 赛道命题式基础赛道的三项 Vitis HLS 优化工作：HMAC-SHA256、LZ4 压缩和 Cholesky 分解。项目面向 `xc7z020-clg484-1`，以可综合 C++ 重构、数据流并行、存储映射和循环级优化降低时钟周期与执行延迟。
+本仓库整理并开源 2025 年 FPGA 创新设计竞赛 AMD 赛道命题式基础赛道全国二等奖项目，包含 HMAC-SHA256、LZ4 压缩和 Cholesky 分解三项 Vitis HLS 优化工作。项目面向 `xc7z020-clg484-1`，以可综合 C++ 重构、数据流并行、存储映射和循环级优化降低时钟周期与执行延迟。
 
 - 项目作者：**Ethereal**
+- 竞赛成绩：**全国二等奖**
 - 开发工具：AMD Vitis HLS 2024.2
 - 目标器件：Xilinx Zynq-7000 `xc7z020-clg484-1`
 - 开源协议：Apache License 2.0
