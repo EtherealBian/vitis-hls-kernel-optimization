@@ -1,68 +1,76 @@
-# 复现指南
+# 构建、部署与验证
 
-## 1. 环境
+## 环境
 
-- AMD Vitis HLS 2024.2
-- 支持器件：`xc7z020-clg484-1`
-- Windows 或 Linux；命令行中能够直接调用 `vitis_hls`
-- 建议保留至少 10 GB 临时空间，HLS 工程和 RTL 导出不会提交到 Git
+| 阶段 | 推荐环境 |
+| --- | --- |
+| 初赛 | AMD Vitis HLS 2024.2，目标器件 `xc7z020-clg484-1` |
+| 决赛 HLS/Vivado | AMD Vitis/Vivado 2025.2，目标器件 `xc7z020clg400-1` |
+| 决赛板端 | 能加载 Zynq-7020 Overlay 的 PYNQ Linux、Python 3、NumPy、Matplotlib、ipywidgets |
 
-归档报告由 Vitis HLS 2024.2 生成。其他版本可能改变 pragma 解释、调度结果和资源估计，因此即使功能验证通过，周期与资源也不一定逐项一致。
+不同版本可能升级 FFT、DMA 或 Block Design IP。若 Vivado 提示升级 IP，应先保存
+原工程副本，并重新执行 C 仿真、综合、时序和板端验证。
 
-## 2. 运行 HMAC-SHA256
+## 初赛复现
 
-```bash
-cd security/L1/tests/hmac/sha256
-vitis_hls -f run_hls.tcl
-```
+进入 `preliminary/` 后按其 README 执行三套 `run_hls.tcl`。历史综合与协同仿真
+报告已随各测试目录保留，便于在无法安装 Vitis 2024.2 时核对结果。
 
-脚本综合顶层 `test_hmac_sha256`，目标时钟 14.00 ns。C 仿真应验证两组输入且无错误；协同仿真归档结果为 Pass，延迟为 433 cycles。
+## 决赛 HLS IP
 
-## 3. 运行 LZ4 压缩
+在 Vitis Unified IDE 2025.2 中分别导入以下组件描述：
 
-```bash
-cd data_compression/L1/tests/lz4_compress
-vitis_hls -f run_hls.tcl
-```
+- `finals/hls/ddc/vitis-comp.json`
+- `finals/hls/fft/vitis-comp.json`
 
-脚本将 `sample.txt` 压缩到临时的 `sample.txt.encoded`，再通过软件解压比较原文。归档样例压缩比为 2.09396，协同仿真为 Pass，延迟为 1,343 cycles。生成的 `.encoded` 文件已被 `.gitignore` 忽略。
-
-## 4. 运行 Cholesky 分解
+对每个组件依次执行 C Simulation、C Synthesis 和 Package。配置文件已指定
+100 MHz 时钟、`xc7z020clg400-1` 和 IP Catalog 输出。命令行环境中也可在各
+组件目录执行：
 
 ```bash
-cd solver/L1/tests/cholesky/complex_fixed_arch0
-vitis_hls -f run_hls.tcl
+vitis-run --mode hls --csim --config hls_config.cfg --work_dir hls_component
+vitis-run --mode hls --synthesis --config hls_config.cfg --work_dir hls_component
+vitis-run --mode hls --package --config hls_config.cfg --work_dir hls_component
 ```
 
-编译宏固定为：
+DDC 目录的工作目录名使用 `hls_component_ddc`，与其 `vitis-comp.json` 一致。
+若当前安装版本的参数名称不同，以 `vitis-run --help` 为准；不要提交生成的
+`.Xil`、`.cache`、`logs`、`hls/` 或打包中间目录。
 
-- `MATRIX_DIM=3`
-- `MATRIX_LOWER_TRIANGULAR=0`，输出上三角矩阵
-- `SEL_ARCH=0`
-- 复数定点测试数据位于 `datas/complex_fixed/`
+## Vivado 系统工程
 
-C 仿真通过条件包括测试程序的误差/残差判断。归档协同仿真为 Pass，单次事务延迟为 175 cycles，八组有效测试的总执行时间为 1,407 cycles；C 综合估计的单次延迟为 179 cycles。由于实现使用近似倒数平方根，移植到其他位宽或矩阵范围时应重新评估数值误差。
+1. 完成两项 HLS IP 的 Package，确认 `finals/hls/fft` 和 `finals/hls/ddc`
+   下生成可被 Vivado 扫描的 IP Catalog。
+2. 用 Vivado 2025.2 打开 `finals/vivado/Qi.xpr`。工程的 IP Repository 已改为
+   相对路径，便于仓库移动。
+3. 在 IP Catalog 中刷新仓库，确认 `ddc_processor:1.0` 和
+   `fft_spectrum_analyzer:1.0` 均可解析。
+4. 打开 `design_1`，执行 Validate Design、Generate Output Products 和
+   Create HDL Wrapper。
+5. 依次运行 Synthesis、Implementation、Generate Bitstream，并检查无关键
+   时序违例和未约束端口。
+6. 导出 `.bit` 与 `.hwh`，保持相同基本文件名。仓库 `finals/deploy/` 中提供了
+   决赛归档版本，可用于快速板端复现。
 
-## 5. 控制执行阶段
+## PYNQ 部署
 
-三个脚本开头均提供以下开关：
+把以下三个文件复制到板端同一 Notebook 目录：
 
-```tcl
-set CSIM 1
-set CSYNTH 1
-set COSIM 1
-set VIVADO_SYN 1
-set VIVADO_IMPL 0
+```text
+FFT.bit
+FFT.hwh
+spectrum_analyzer.py
 ```
 
-将不需要的阶段改为 `0` 可缩短运行时间。例如只做 C 仿真时保留 `CSIM=1`，其余设为 `0`。默认不执行布局布线；若开启 `VIVADO_IMPL`，耗时和资源需求会显著增加。
+在 Jupyter 中执行 `%run spectrum_analyzer.py`，或把文件内容作为一个代码单元
+运行。射频模式需要连接 10 位 ADC；音频模式需要向板端 UDP 12345 端口发送
+每包 4096 个 little-endian `int16` PCM 采样。停止时点击界面按钮，等待程序
+释放 DMA 连续内存和套接字后再重新运行。
 
-## 6. 结果位置
+## 验证清单
 
-新运行结果位于各测试目录生成的 `.prj/` 中。仓库内 `reports/` 保存参赛归档结果：
-
-- `csim.log`：C 仿真日志
-- `csynth.xml`：顶层时钟、延迟和资源估计
-- `cosim.rpt`：C/RTL 协同仿真结果
-
-比较结果时必须同时核对 Vitis 版本、器件、目标时钟、顶层函数、编译宏和测试输入。
+- DDC C 仿真输出 16384 个 I/Q 点，最后一点 TLAST=1。
+- FFT C 仿真能在双音输入的半谱中检测到超过阈值的峰值。
+- Vivado Block Design Validate Design 通过，HLS IP 和时钟/复位均已解析。
+- 射频输入单音时，主峰随 NCO 中心频率和抽取倍数正确移动。
+- UDP 音频单音时，0~24 kHz 范围内主峰与发送频率一致。

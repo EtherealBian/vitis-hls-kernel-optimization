@@ -1,18 +1,26 @@
 # Vitis HLS 生成目录
 *.prj/
 .Xil/
+**/.Xil/
+**/.cache/
 **/solution[0-9]*/
 **/sol[0-9]*/
+**/hls_component/hls/
+**/hls_component_ddc/hls/
+**/hls_component/logs/
+**/hls_component_ddc/logs/
 
 # Vivado 中间文件
 *.jou
+*.log
 *.pb
 *.dcp
-*.xpr
-*.cache/
 *.runs/
+*.gen/
 *.sim/
-*.srcs/
+*.ip_user_files/
+*.cache/
+*.hw/
 
 # 仿真和导出临时文件
 *.encoded
@@ -20,6 +28,7 @@
 *.exe
 *.o
 *.obj
+ddc_iq_out.txt
 
 # 编辑器与系统文件
 .vscode/

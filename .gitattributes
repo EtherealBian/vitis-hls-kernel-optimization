@@ -1,7 +1,11 @@
 * text=auto eol=lf
 
 *.png binary
+*.bit binary
 *.dat binary
+*.hwh text eol=lf
 *.xml text eol=lf
+*.bd text eol=lf
+*.xpr text eol=lf
 *.rpt text eol=lf
 *.log text eol=lf
