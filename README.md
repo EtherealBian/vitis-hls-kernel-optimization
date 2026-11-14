@@ -1,14 +1,28 @@
-# Zynq Spectrum & HLS
+# Vitis HLS Kernel Optimization
 
 [中文](#中文) · [English](#english)
 
-![Zynq spectrum analyzer and HLS kernels](docs/project-overview.png)
-
 ## 中文
 
-2025 FPGA 创新设计竞赛 AMD 赛道全国二等奖项目。初赛针对三项 HLS 算子优化计算和存储结构。决赛将 ADC、数字下变频、FFT 与 PYNQ 集成到一套 Zynq-7000 频谱仪。
+2025 FPGA 创新设计竞赛 AMD 赛道全国二等奖项目。初赛以 **AMD 官方 Vitis Libraries** 为基线，重构 HMAC-SHA256、LZ4 和 Cholesky 三个算子的硬件数据通路。决赛作品是 Zynq 实时频谱仪。
 
-### 决赛频谱仪
+### 初赛｜AMD Vitis Libraries 算子优化
+
+![三项初赛算子的架构优化及归档周期对比](docs/kernel-optimization.png)
+
+| 算子 | 归档基线 → 优化版 | 周期缩减 | 主要贡献 |
+| --- | ---: | ---: | --- |
+| [HMAC-SHA256](preliminary/docs/HMAC_SHA256.md) | 809 → 433 | 46.5% | 合并消息补位与调度字生成，双 SHA 核按消息并行，输出按原顺序合并 |
+| [LZ4 压缩](preliminary/docs/LZ4_COMPRESSION.md) | 约 3,390 → 1,343 | 约 60.4% | 用批次标签使旧字典项失效，省去逐项清空，并行评估候选，编码端使用 Token 查表 |
+| [Cholesky 分解](preliminary/docs/CHOLESKY.md) | 4,919 → 1,407 | 71.4% | 二维矩阵完全分区、行内展开与部分和并行归约，定点倒数平方根使用分段初值和牛顿迭代 |
+
+单位为归档测试的总执行周期，Cholesky 的 1,407 周期是测试总量，单次事务为 175 周期。结果对应 Vitis HLS 2024.2、`xc7z020-clg484-1` 和各赛题固定测试负载。LZ4 初始周期为归档近似值，保留的编码基线已包含部分预读取优化。具体变更、资源和精度取舍见各算子说明。 [初赛源码、基线和报告](preliminary/) · [上游许可与署名](NOTICE.md)
+
+### 决赛｜Zynq 实时频谱仪
+
+下图是竞赛期间的 PYNQ Z2 FFT 应用界面截图，展示 FIR 配置和时域、幅度、相位、功率谱密度视图。下文描述仓库归档的实时 ADC / UDP 版本。
+
+<img src="docs/competition-app.jpg" width="640" alt="竞赛期间的 PYNQ Z2 FFT 应用界面">
 
 1. **RF 采集与跨时钟域**。10 位 ADC 以 32 MSPS 采集。RTL 将偏移二进制转换为补码并封装成 AXI4-Stream，异步 FIFO 将数据送入 100 MHz 处理域。
 2. **数字下变频与抽取**。32 位 NCO 查 Q1.15 正弦表生成本振，实数输入与复本振混频。对 I/Q 样本分别积分，每达到设定抽取倍数输出一组结果。
@@ -21,16 +35,6 @@
 | LOW | ADC，NCO 为零 | 从直流起的低频频段 |
 | AUDIO | UDP 48 kHz PCM | 0～24 kHz |
 
-### 初赛 HLS 算子
-
-| 算子 | 实现关注点 |
-| --- | --- |
-| HMAC-SHA256 | 消息补位、消息调度和 64 轮压缩的流式组织 |
-| LZ4 | LZ77 滑窗候选匹配、最长匹配选择和 LZ4 序列编码 |
-| Cholesky | 正定矩阵的部分和并行计算与三角矩阵输出 |
-
-[初赛源码、基线与报告](preliminary/) · [算子与文件索引](docs/ALGORITHM_INDEX.md)
-
 ### 部署和复现
 
 - **板端试跑**。将 [FFT.bit](finals/deploy/FFT.bit)、[FFT.hwh](finals/deploy/FFT.hwh) 和 [spectrum_analyzer.py](finals/pynq/spectrum_analyzer.py) 放在板端同一 Jupyter 目录，运行 `%run spectrum_analyzer.py`。音频模式接收发往板端 UDP 12345 的小端 `int16` PCM，每包 4096 个样本。
@@ -41,9 +45,21 @@
 
 ## English
 
-This 2025 AMD-track FPGA competition entry won national second prize. The preliminary round optimized three HLS kernels. The finals integrated ADC capture, digital downconversion, FFT, and a PYNQ interface on Zynq-7000.
+This project won national second prize in the AMD track of the 2025 FPGA Innovation Design Competition. The main contribution is the preliminary-round redesign of three kernels based on **AMD's official Vitis Libraries**. The finals entry is a separate Zynq spectrum analyzer.
+
+### Preliminary round | Vitis Libraries kernel optimization
+
+| Kernel | Archived baseline → optimized cycles | Cycle reduction | Main changes |
+| --- | ---: | ---: | --- |
+| [HMAC-SHA256](preliminary/docs/HMAC_SHA256.md) | 809 → 433 | 46.5% | Fused padding and message scheduling, dual SHA cores, and ordered output merge |
+| [LZ4](preliminary/docs/LZ4_COMPRESSION.md) | ~3,390 → 1,343 | ~60.4% | Batch tags replace per-entry dictionary clearing, with parallel candidate evaluation and token lookup |
+| [Cholesky](preliminary/docs/CHOLESKY.md) | 4,919 → 1,407 | 71.4% | Partitioned matrix storage, unrolled inner loops, parallel partial sums, and Newton reciprocal square root |
+
+These are archived test totals for the contest workloads, using Vitis HLS 2024.2 and `xc7z020-clg484-1`. Cholesky reports 175 cycles per transaction. The initial LZ4 count is approximate, and the retained encoder baseline already includes some prefetch changes. [Optimization sources, baselines, and reports](preliminary/) · [Upstream attribution](NOTICE.md)
 
 ### Finals spectrum analyzer
+
+The [competition application screenshot](docs/competition-app.jpg) shows the PYNQ Z2 FFT interface with FIR controls and time-domain, magnitude, phase, and PSD views. The archived real-time ADC / UDP design is described below. [System diagram](docs/project-overview.png)
 
 1. **RF capture.** A 10-bit ADC runs at 32 MSPS. RTL converts offset binary to signed AXI4-Stream, and an asynchronous FIFO bridges the sampling and 100 MHz processing domains.
 2. **Downconversion.** A 32-bit NCO uses a Q1.15 sine table to generate the complex local oscillator. The DDC mixes the real input and integrates each I/Q channel before emitting one pair per decimation interval.
@@ -51,10 +67,6 @@ This 2025 AMD-track FPGA competition entry won national second prize. The prelim
 4. **Spectrum display.** Optional Hann windowing precedes the configurable FFT. The kernel computes magnitude squared, DMA S2MM returns floating-point power, and PYNQ converts it to dB, smooths the trace, and marks the strongest peak.
 
 HIGH mode tunes the NCO to the center of the band of interest. LOW mode sets the NCO to zero. AUDIO mode displays the 0–24 kHz half-spectrum.
-
-### Preliminary HLS kernels
-
-The [preliminary archive](preliminary/) includes source, baselines, tests, and reports. HMAC-SHA256 covers stream organization around padding, message scheduling, and the 64-round compression core. LZ4 covers sliding-window match selection and sequence encoding. Cholesky uses parallel partial sums to produce a triangular factor. [Source and algorithm index](docs/ALGORITHM_INDEX.md)
 
 ### Deploy and reproduce
 
