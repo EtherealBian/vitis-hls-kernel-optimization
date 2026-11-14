@@ -18,6 +18,20 @@
 
 单位为归档测试的总执行周期，Cholesky 的 1,407 周期是测试总量，单次事务为 175 周期。结果对应 Vitis HLS 2024.2、`xc7z020-clg484-1` 和各赛题固定测试负载。LZ4 初始周期为归档近似值，保留的编码基线已包含部分预读取优化。具体变更、资源和精度取舍见各算子说明。 [初赛源码、基线和报告](preliminary/) · [上游许可与署名](NOTICE.md)
 
+#### 三项优化的数据通路
+
+**HMAC-SHA256** 将消息补位与调度字生成放进同一个阶段，省去中间块搬运，测试从 809 降到 592 周期。随后把完整消息分发给两个 SHA 核，按输入顺序合并摘要，将测试总周期降到 433。核内 64 轮保留算法规定的数据依赖。
+
+![HMAC-SHA256：阶段融合、双核分发与保序合并](docs/hmac-optimization.png)
+
+**LZ4** 为 BRAM 字典项加批次标签，读取时只接受本批次的记录，省去逐项清空。展开候选比较、按匹配长度选出有效结果，再由编码器查表生成 Token 并输出字节流。
+
+![LZ4：批次标签、并行候选匹配与 Token 编码](docs/lz4-optimization.png)
+
+**Cholesky** 保留行间依赖，将行内内积展开并并行归约。二维矩阵完全分区为并行读取提供端口，定点倒数平方根用分段初值和牛顿迭代近似。
+
+![Cholesky：矩阵分区、行内并行与倒数平方根](docs/cholesky-optimization.png)
+
 ### 决赛｜Zynq 实时频谱仪
 
 下图是竞赛期间的 PYNQ Z2 FFT 应用界面截图，展示 FIR 配置和时域、幅度、相位、功率谱密度视图。下文描述仓库归档的实时 ADC / UDP 版本。
@@ -56,6 +70,8 @@ This project won national second prize in the AMD track of the 2025 FPGA Innovat
 | [Cholesky](preliminary/docs/CHOLESKY.md) | 4,919 → 1,407 | 71.4% | Partitioned matrix storage, unrolled inner loops, parallel partial sums, and Newton reciprocal square root |
 
 These are archived test totals for the contest workloads, using Vitis HLS 2024.2 and `xc7z020-clg484-1`. Cholesky reports 175 cycles per transaction. The initial LZ4 count is approximate, and the retained encoder baseline already includes some prefetch changes. [Optimization sources, baselines, and reports](preliminary/) · [Upstream attribution](NOTICE.md)
+
+Detailed diagrams show [SHA stage fusion and ordered dual-core output](docs/hmac-optimization.png), [batch-tagged LZ4 dictionary and match search](docs/lz4-optimization.png), and [Cholesky row-local parallelism and diagonal normalization](docs/cholesky-optimization.png).
 
 ### Finals spectrum analyzer
 
