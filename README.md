@@ -1,10 +1,12 @@
-# Vitis HLS Kernel Optimization
+# Vitis HLS 算子优化与 Zynq 实时频谱仪
 
-[中文](#中文) · [English](#english)
+**获奖荣誉：2025 年全国大学生嵌入式芯片与系统设计竞赛 · FPGA 创新设计赛道（AMD 方向）· 全国二等奖。**
+
+**初赛**优化了 AMD Vitis Libraries 中的三个算子：在各自的赛题测试中，HMAC-SHA256 的总执行周期减少 46.5%，LZ4 压缩约减少 60.4%，Cholesky 分解减少 71.4%。**决赛**在 Zynq 上实现实时频谱仪，用 FFT 显示 ADC 射频输入或 UDP 音频输入的功率谱。
+
+[初赛算子与报告](preliminary/) · [决赛频谱仪](finals/) · [部署和复现](#部署和复现) · [English](#english)
 
 ## 中文
-
-2025 FPGA 创新设计竞赛 AMD 赛道全国二等奖项目。初赛以 **AMD 官方 Vitis Libraries** 为基线，重构 HMAC-SHA256、LZ4 和 Cholesky 三个算子的硬件数据通路。决赛作品是 Zynq 实时频谱仪。
 
 ### 初赛｜AMD Vitis Libraries 算子优化
 
@@ -59,7 +61,9 @@
 
 ## English
 
-This project won national second prize in the AMD track of the 2025 FPGA Innovation Design Competition. The main contribution is the preliminary-round redesign of three kernels based on **AMD's official Vitis Libraries**. The finals entry is a separate Zynq spectrum analyzer.
+**Award: National Second Prize · AMD division, FPGA Innovation Design track · 2025 National Undergraduate Embedded Chip and System Design Competition.**
+
+In the preliminary round, the redesigns reduced total cycles on the contest workloads by 46.5% for HMAC-SHA256, about 60.4% for LZ4 compression, and 71.4% for Cholesky decomposition, relative to the archived Vitis Libraries baselines. The separate finals entry is a real-time Zynq spectrum analyzer that displays the power spectrum of either an RF signal from an ADC or audio received over UDP.
 
 ### Preliminary round | Vitis Libraries kernel optimization
 
