@@ -8,9 +8,11 @@
 
 ## 中文
 
+[![Vitis HLS 算子微架构与实时频谱分析：三个算子的周期对照及决赛频谱仪信号链](docs/vitis-hls-architecture.png)](docs/vitis-hls-architecture.svg)
+
 ### 初赛｜AMD Vitis Libraries 算子优化
 
-![三项初赛算子的架构优化及归档周期对比](docs/kernel-optimization.png)
+[三项算子的归档周期对比图](docs/kernel-optimization.png)
 
 | 算子 | 归档基线 → 优化版 | 周期缩减 | 主要贡献 |
 | --- | ---: | ---: | --- |
